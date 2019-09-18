@@ -21,13 +21,16 @@
 #pragma link C++ class FairDetParAsciiFileIo+;
 #pragma link C++ class FairDetParIo+;
 #pragma link C++ class FairDetParRootFileIo+;
+// #pragma link C++ class FairDetParDbIo+;
 #pragma link C++ class FairGenericParAsciiFileIo+;
 #pragma link C++ class FairGenericParRootFileIo+;
+#pragma link C++ class FairGenericParDbIo+;
 #pragma link C++ class FairParAsciiFileIo+;
 #pragma link C++ class FairParGenericSet+;
 #pragma link C++ class FairParIo+;
 #pragma link C++ class FairParRootFile+;
 #pragma link C++ class FairParRootFileIo+;
+#pragma link C++ class FairParDbIo+;
 #pragma link C++ class FairParSet+;
 #pragma link C++ class FairParVersion+;
 #pragma link C++ class FairParamList+;

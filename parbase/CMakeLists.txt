@@ -18,6 +18,8 @@ Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/base/sim
   ${CMAKE_SOURCE_DIR}/geobase
   ${CMAKE_SOURCE_DIR}/parbase
+
+  ${CMAKE_BINARY_DIR}/include
  )
 
 Set(SYSTEM_INCLUDE_DIRECTORIES
@@ -34,19 +36,22 @@ Set(LINK_DIRECTORIES
 Link_Directories(${LINK_DIRECTORIES})
 
 set(SRCS
-FairContFact.cxx       
-FairDetParAsciiFileIo.cxx    
-FairDetParIo.cxx         
-FairDetParRootFileIo.cxx     
-FairGenericParAsciiFileIo.cxx     
-FairGenericParRootFileIo.cxx     
-FairParAsciiFileIo.cxx   
-FairParGenericSet.cxx   
-FairParIo.cxx  
-FairParRootFileIo.cxx 
-FairParSet.cxx 
-FairParamList.cxx  
-FairRtdbRun.cxx  
+FairContFact.cxx
+FairDetParAsciiFileIo.cxx
+FairDetParIo.cxx
+FairDetParRootFileIo.cxx
+# FairDetParDbIo.cxx
+FairGenericParAsciiFileIo.cxx
+FairGenericParRootFileIo.cxx
+FairGenericParDbIo.cxx
+FairParAsciiFileIo.cxx
+FairParGenericSet.cxx
+FairParIo.cxx
+FairParRootFileIo.cxx
+FairParDbIo.cxx
+FairParSet.cxx
+FairParamList.cxx
+FairRtdbRun.cxx
 FairRuntimeDb.cxx
 )
 

@@ -48,7 +48,8 @@ class FairRuntimeDb : public TObject
       UNKNOWN_Type    = 0,
       AsciiFileOutput = 1, // Ascii in-out-put
       RootFileOutput  = 2, // Root Files
-      RootTSQLOutput  = 3  // Use a TSQL db
+      RootTSQLOutput  = 3,  // Use a TSQL db
+      DbOutput  = 4  // Use a TSQL db
     } ParamIOType;
     ParamIOType ioType;//IO Type
 

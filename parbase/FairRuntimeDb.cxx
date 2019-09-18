@@ -22,10 +22,12 @@
 #include "FairGenericParAsciiFileIo.h"  // for FairGenericParAsciiFileIo
 #include "FairGenericParRootFileIo.h"   // for FairGenericParRootFileIo
 //#include "FairGenericParTSQLIo.h"       // for FairGenericParTSQLIo
+#include "FairGenericParDbIo.h"
 #include "FairLogger.h"                 // for FairLogger, MESSAGE_ORIGIN
 #include "FairParAsciiFileIo.h"         // for FairParAsciiFileIo
 #include "FairParIo.h"                  // for FairParIo
 #include "FairParRootFileIo.h"          // for FairParRootFileIo
+#include "FairParDbIo.h"
 #include "FairParSet.h"                 // for FairParSet
 #include "FairRtdbRun.h"                // for FairRtdbRun, FairParVersion
 
@@ -460,6 +462,14 @@ Bool_t FairRuntimeDb::writeContainer(FairParSet* cont, FairRtdbRun* run, FairRtd
         vers->setRootVersion(cv);
       }
       break;// End of Ascii IO
+    case DbOutput:
+      if (cont->hasChanged()) {
+        cv = findOutputVersion(cont);
+        if(cv == 0) {
+          cont->write(output);
+        }
+      }
+      break;//End of TSQL IO
     default: // Unknown IO
       Error("writeContainer()","Unknown output file type.");
       break;
@@ -730,7 +740,9 @@ Bool_t FairRuntimeDb::setOutput(FairParIo* op)
       isRootFileOutput=kTRUE;
     } else if (strcmp(output->IsA()->GetName(), "FairParTSQLIo") == 0) {
       ioType = RootTSQLOutput;
-    } else { //ASCII
+    } else if (strcmp(output->IsA()->GetName(), "FairParDbIo") == 0) {
+      ioType = DbOutput;
+     } else { //ASCII
       ioType = AsciiFileOutput;
     }
     return kTRUE;
@@ -820,6 +832,10 @@ void FairRuntimeDb::activateParIo(FairParIo* io)
     //  FairDetParTSQLIo* pn = new FairGenericParTSQLIo();
     //  io->setDetParIo(pn);
     //}
+    else if(strcmp(ioName,"FairParDbIo") == 0) {
+      FairGenericParDbIo* pn = new FairGenericParDbIo(static_cast<FairParDbIo*>(io));
+     io->setDetParIo(pn);
+    }
   }
   TIter next(&contFactories);
   FairContFact* fact;
