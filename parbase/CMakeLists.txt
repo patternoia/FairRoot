@@ -31,6 +31,7 @@ Include_Directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 
 Set(LINK_DIRECTORIES
   ${ROOT_LIBRARY_DIR}
+  ${CMAKE_BINARY_DIR}/lib
 )
 
 Link_Directories(${LINK_DIRECTORIES})
@@ -62,7 +63,7 @@ Set(LIBRARY_NAME ParBase)
 if(ROOT_VERSION_MAJOR VERSION_LESS 6 )
 Set(DEPENDENCIES FairTools RIO Cint Core )
 else()
-Set(DEPENDENCIES FairTools  RIO Core )
+Set(DEPENDENCIES FairTools  RIO Core TGenBase)
 endif()
 
 GENERATE_LIBRARY()

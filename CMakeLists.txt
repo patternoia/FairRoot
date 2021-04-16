@@ -82,6 +82,8 @@ include(FairRootCmakePolicies)
 set_fairroot_cmake_policies()
 
 # Load some basic macros which are needed later on
+include(ExternalProject)
+include(CbmMacros)
 include(FairMacros)
 include(WriteConfigFile)
 include(Dart)
@@ -292,6 +294,7 @@ EndIf()
 # Recurse into the given subdirectories.  This does not actually
 # cause another cmake executable to run.  The same process will walk through
 # the project's entire directory structure.
+add_subdirectory (external)
 add_subdirectory (alignment)
 add_subdirectory (fairtools)
 add_subdirectory (base)

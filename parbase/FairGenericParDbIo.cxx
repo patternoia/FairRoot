@@ -12,9 +12,10 @@
 #pragma GCC diagnostic push 
 #pragma GCC diagnostic ignored "-Wshadow"
 
-#include "TGenBaseClient/Client.h"
-#include "TGenBaseClient/FairParameter.h"
-#include "TGenBaseClient/Streamer.h"
+#include "TGenBase/Client.h"
+#include "TGenBase/ObjectStore.h"
+#include "TGenBase/Streamer.h"
+#include "TGenBase/QueryBuilder.h"
 
 #pragma GCC diagnostic pop
 
@@ -32,61 +33,86 @@ Bool_t FairGenericParDbIo::init(FairParSet* pPar)
   return read(pPar);
 }
 
+void FairGenericParDbIo::SetServerURI(std::string value) {
+  TGenBase::Client::Instance()->SetServerURI(value);
+}
+void FairGenericParDbIo::SetAccessToken(std::string value) {
+  TGenBase::Client::Instance()->SetAccessToken(value);
+}
+void FairGenericParDbIo::SetVerbose(bool value) {
+  TGenBase::Client::Instance()->SetVerbose(value);
+}
+
+
 Bool_t FairGenericParDbIo::read(FairParSet *pPar) {
-  // // generic read function for parameter containers
   // Text_t *name = const_cast<char*>(pPar->GetName());
-  // Int_t version = findInputVersion(name);
+  Int_t version = pPar->getInputVersion(inputNumber);
 
-  // // cout << "-I- FairDetParRootFileIo#  " << name << " : " << version <<  endl;
-
-  // if (version <= 0) {
-  //   pPar->setInputVersion(-1, inputNumber);
-  //   return kFALSE;
-  // }
-
-  // if (pPar->getInputVersion(inputNumber) == version &&
-  //     pPar->getInputVersion(inputNumber) != -1) {
-  //   return kTRUE;
-  // }
-
-  // TKey *key = dynamic_cast<TKey *>(gDirectory->GetKey(name, version));
-  // if (key) {
-  //   pPar->clear();
-  //   key->Read(pPar);
-  //   pPar->setInputVersion(version, inputNumber);
-  //   pPar->setChanged();
-  //   cout << "Container " << pPar->GetName() << " initialized from ROOT file."
-  //        << endl;
-  //   return kTRUE;
-  // }
-  // pPar->setInputVersion(-1, inputNumber);
-  // return kFALSE;
-
-  if (!pPar)
+  // does not exist yet
+  if (version <= 0) {
+    pPar->setInputVersion(-1, inputNumber);
     return kFALSE;
+  }
 
-  std::vector<TGenBase::FairParameter> result = TGenBase::FairParameter::GetByName(pPar->GetName());
-  if (!result.size())
-    return kFALSE;
-
-  TGenBase::Streamer ParameterStreamer(result[0].GetParameter());
-  if (ParameterStreamer.AsString().size())
-  {
-    ParameterStreamer.Fill(pPar);
+  // prevent re-read
+  if (pPar->getInputVersion(inputNumber) == version &&
+      pPar->getInputVersion(inputNumber) != -1) {
     return kTRUE;
   }
 
+  if (!pPar) {
+    pPar->setInputVersion(-1, inputNumber);
+    return kFALSE;
+  }
+
+  std::vector<TGenBase::ObjectStore> result = TGenBase::QueryBuilder().Where("Name", "=", pPar->GetName())
+    .OrderBy("CreatedAt", "desc")
+    // add more filtering
+    .Execute<TGenBase::ObjectStore>();
+  // std::vector<TGenBase::ObjectStore> result = TGenBase::ObjectStore::GetByName(pPar->GetName());
+
+  // not found in DB
+  if (!result.size()) {
+    pPar->setInputVersion(-1, inputNumber);
+    return kFALSE;
+  }
+
+  FairParSet *clone = static_cast<FairParSet*>(pPar->Clone());
+  for (auto object : result) {
+    TGenBase::Streamer ParameterStreamer(object.GetObject());
+    if (ParameterStreamer.AsString().size())
+    {
+
+      ParameterStreamer.Fill(clone);
+
+      // change condition
+      if (clone->GetName() != 0) {
+        pPar->clear();
+        ParameterStreamer.Fill(pPar);
+        pPar->setChanged();
+        std::cout << "Container " << pPar->GetName() << " initialized from DB." << std::endl;
+
+        delete clone;
+        return kTRUE;
+      }
+    }
+  }
+
+  delete clone;
   return kFALSE;
 }
 
 Int_t FairGenericParDbIo::write(FairParSet *pPar) {
   if (!pPar) return -1;
 
-  TGenBase::FairParameter par;
+  const auto version = pPar->getInputVersion(inputNumber);
+  pPar->setInputVersion(version+1, inputNumber);
+
+  TGenBase::ObjectStore par;
   par.SetName(pPar->GetName());
   // TGenBase::Streamer ParameterStreamer(static_cast<TObject*>(pPar));
   TGenBase::Streamer ParameterStreamer(pPar);
-  par.SetParameter(ParameterStreamer.AsString());
+  par.SetObject(ParameterStreamer.AsString());
   par.Store();
 
   return ParameterStreamer.AsString().size() / 2;

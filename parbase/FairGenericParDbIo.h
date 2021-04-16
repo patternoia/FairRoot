@@ -21,8 +21,18 @@ class FairGenericParDbIo : public FairDetParIo
     virtual Bool_t read(FairParSet*);
     virtual Int_t write(FairParSet*);
 
+    void SetServerURI(std::string value);
+    void SetAccessToken(std::string value);
+    void SetVerbose(bool verbose = true);
+
   protected:
     FairParDbIo* fParIo{nullptr};
+
+  private:
+    std::string fServerURI {""};
+    std::string fAccessToken {""};
+    bool fVerbose {false};
+
 
     ClassDef(FairGenericParDbIo,0)
 };

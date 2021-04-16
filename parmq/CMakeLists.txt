@@ -42,7 +42,7 @@ Set(DEPENDENCIES
   FairMQ::FairMQ
   ${Boost_THREAD_LIBRARY}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  TGenBaseClient
+  TGenBase
 )
 
 Set(LIBRARY_NAME ParMQ)
