@@ -26,6 +26,18 @@ class FairParDbIo : public FairParIo
     virtual Bool_t check() { return kTRUE; };
     virtual void cd() { ; }
 
+    void SetServerURI(std::string value);
+    void SetAccessToken(std::string value);
+    void SetVerbose(bool verbose = true);
+
+    uint GetRunId() { return fRunId; };
+
+  protected:
+    std::string fServerURI {""};
+    std::string fAccessToken {""};
+    bool fVerbose {false};
+    uint fRunId {0};
+
     ClassDef(FairParDbIo,0)
 };
 

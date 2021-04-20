@@ -9,6 +9,13 @@
 #include "FairParDbIo.h"
 #include "FairRtdbRun.h"
 #include "FairRuntimeDb.h"
+#include "FairGenericParDbIo.h"
+
+#pragma GCC diagnostic push 
+#pragma GCC diagnostic ignored "-Wshadow"
+#include "TGenBase/Client.h"
+#pragma GCC diagnostic pop
+
 
 #include <iostream>
 
@@ -31,9 +38,21 @@ void FairParDbIo::close()
 
 void FairParDbIo::print()
 {
-  std::cout << "FairParDbIo::print()" << std::endl;
+  std::cout << "FairParDbIo" << std::endl;
 }
 
 void FairParDbIo::readVersions(FairRtdbRun* currentRun)
 {
+  std::cout << "FairParDbIo::readVersions()" << std::endl;
+  fRunId = currentRun->getRunId();
+}
+
+void FairParDbIo::SetServerURI(std::string value) {
+  TGenBase::Client::Instance()->SetServerURI(value);
+}
+void FairParDbIo::SetAccessToken(std::string value) {
+  TGenBase::Client::Instance()->SetAccessToken(value);
+}
+void FairParDbIo::SetVerbose(bool value) {
+  TGenBase::Client::Instance()->SetVerbose(value);
 }

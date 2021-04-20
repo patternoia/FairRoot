@@ -8,6 +8,11 @@
 
 #include "FairGenericParDbIo.h"
 #include "FairParSet.h"
+#include "FairRuntimeDb.h"
+#include "FairRtdbRun.h"
+#include "FairParDbIo.h"
+
+#include "TClass.h"
 
 #pragma GCC diagnostic push 
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -25,7 +30,7 @@ FairGenericParDbIo::FairGenericParDbIo(FairParDbIo* parIo)
   : FairDetParIo()
 {
   fParIo = parIo;
-  fName = "FairGenericParIo";
+  fName = "FairGenericParIo"; // Do not ever change
 }
 
 Bool_t FairGenericParDbIo::init(FairParSet* pPar)
@@ -33,25 +38,21 @@ Bool_t FairGenericParDbIo::init(FairParSet* pPar)
   return read(pPar);
 }
 
-void FairGenericParDbIo::SetServerURI(std::string value) {
-  TGenBase::Client::Instance()->SetServerURI(value);
-}
-void FairGenericParDbIo::SetAccessToken(std::string value) {
-  TGenBase::Client::Instance()->SetAccessToken(value);
-}
-void FairGenericParDbIo::SetVerbose(bool value) {
-  TGenBase::Client::Instance()->SetVerbose(value);
-}
-
-
 Bool_t FairGenericParDbIo::read(FairParSet *pPar) {
-  // Text_t *name = const_cast<char*>(pPar->GetName());
+  std::cout << "FairGenericParDbIo::read " << pPar->GetName() << std::endl;
+  if (!pPar) {
+    return kFALSE;
+  }
+
   Int_t version = pPar->getInputVersion(inputNumber);
 
-  // does not exist yet
-  if (version <= 0) {
-    pPar->setInputVersion(-1, inputNumber);
-    return kFALSE;
+  // look up versions set with rtdb->setInputVersion
+  FairParVersion *currVers =
+      FairRuntimeDb::instance()->getCurrentRun()->getParVersion(pPar->GetName());
+  Int_t v = currVers->getInputVersion(inputNumber);
+  std::cout << v << std::endl;
+  if (v > 0) {
+    version = v;
   }
 
   // prevent re-read
@@ -60,16 +61,21 @@ Bool_t FairGenericParDbIo::read(FairParSet *pPar) {
     return kTRUE;
   }
 
-  if (!pPar) {
-    pPar->setInputVersion(-1, inputNumber);
-    return kFALSE;
-  }
+  const UInt_t runId = FairRuntimeDb::instance()->getCurrentRun()->getRunId();
 
-  std::vector<TGenBase::ObjectStore> result = TGenBase::QueryBuilder().Where("Name", "=", pPar->GetName())
+  // prepare query
+  std::vector<TGenBase::ObjectStore> result = TGenBase::QueryBuilder()
+    .Where("Name", "=", pPar->GetName())
+    .Where("Metadata->Author", "=", pPar->getAuthor())
+    .Where("Metadata->ClassName", "=", pPar->IsA()->GetName())
+    .Where("Metadata->Context", "=", pPar->getParamContext())
+    .Where("Metadata->Version", "<=", std::to_string(version))
+    .Where("Metadata->RunId", "<=", std::to_string(runId))
     .OrderBy("CreatedAt", "desc")
-    // add more filtering
+    .OrderBy("Metadata->Version", "desc")
+    .OrderBy("Metadata->RunId", "desc")
+    .Last()
     .Execute<TGenBase::ObjectStore>();
-  // std::vector<TGenBase::ObjectStore> result = TGenBase::ObjectStore::GetByName(pPar->GetName());
 
   // not found in DB
   if (!result.size()) {
@@ -77,43 +83,63 @@ Bool_t FairGenericParDbIo::read(FairParSet *pPar) {
     return kFALSE;
   }
 
-  FairParSet *clone = static_cast<FairParSet*>(pPar->Clone());
-  for (auto object : result) {
-    TGenBase::Streamer ParameterStreamer(object.GetObject());
-    if (ParameterStreamer.AsString().size())
-    {
+  const auto& object = result[0];
+  TGenBase::Streamer ParameterStreamer(object.GetObject());
+  if (ParameterStreamer.AsString().size())
+  {
+    auto metadata = object.GetMetadata();
 
-      ParameterStreamer.Fill(clone);
-
-      // change condition
-      if (clone->GetName() != 0) {
-        pPar->clear();
-        ParameterStreamer.Fill(pPar);
-        pPar->setChanged();
-        std::cout << "Container " << pPar->GetName() << " initialized from DB." << std::endl;
-
-        delete clone;
-        return kTRUE;
-      }
+    if (std::string(pPar->IsA()->GetName()) != metadata["ClassName"]) {
+      std::cout << "FairGenericParDbIo: Container class mismatch: "
+        << pPar->GetName()
+        << " expected. "
+        << metadata["ClassName"]
+        << " found in DB."
+        << std::endl;
+      assert(false);
     }
+
+    ParameterStreamer.Fill(pPar);
+    pPar->setChanged();
+
+    pPar->setInputVersion(std::stoi(metadata["Version"]), inputNumber);
+    // pPar->setAuthor(metadata["Author"].c_str());
+    // pPar->setContext(metadata["Context"].c_str());
+    // pPar->setRunId(std::stoi(metadata["RunId"]));
+
+    std::cout << "Container " << pPar->GetName() << " initialized from DB." << std::endl;
+
+    return kTRUE;
   }
 
-  delete clone;
   return kFALSE;
 }
 
 Int_t FairGenericParDbIo::write(FairParSet *pPar) {
   if (!pPar) return -1;
 
-  const auto version = pPar->getInputVersion(inputNumber);
-  pPar->setInputVersion(version+1, inputNumber);
+  const UInt_t runId = FairRuntimeDb::instance()->getCurrentRun()->getRunId();
 
-  TGenBase::ObjectStore par;
-  par.SetName(pPar->GetName());
-  // TGenBase::Streamer ParameterStreamer(static_cast<TObject*>(pPar));
+  Int_t version = pPar->getInputVersion(inputNumber);
+  version = version > 0 ? version + 1 : 1;
+  pPar->setInputVersion(version, inputNumber);
+
+  TGenBase::ObjectStore object;
+  object.SetName(pPar->GetName());
+
   TGenBase::Streamer ParameterStreamer(pPar);
-  par.SetObject(ParameterStreamer.AsString());
-  par.Store();
+  object.SetObject(ParameterStreamer.AsString());
+
+  std::map<std::string, std::string> metadata{{
+    { "Author", pPar->getAuthor() },
+    { "ClassName", pPar->IsA()->GetName() },
+    { "Context", pPar->getParamContext() },
+    { "Version", std::to_string(version) },
+    { "RunId", std::to_string(runId) }
+  }};
+  object.SetMetadata(metadata);
+
+  object.Store();
 
   return ParameterStreamer.AsString().size() / 2;
 }

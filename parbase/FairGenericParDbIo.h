@@ -11,6 +11,7 @@
 #include "FairDetParDbIo.h"
 
 class FairParSet;
+class FairRtdbRun;
 
 class FairGenericParDbIo : public FairDetParIo
 {
@@ -20,19 +21,10 @@ class FairGenericParDbIo : public FairDetParIo
     virtual Bool_t init(FairParSet*);
     virtual Bool_t read(FairParSet*);
     virtual Int_t write(FairParSet*);
-
-    void SetServerURI(std::string value);
-    void SetAccessToken(std::string value);
-    void SetVerbose(bool verbose = true);
+    Int_t findInputVersion(Text_t *name);
 
   protected:
     FairParDbIo* fParIo{nullptr};
-
-  private:
-    std::string fServerURI {""};
-    std::string fAccessToken {""};
-    bool fVerbose {false};
-
 
     ClassDef(FairGenericParDbIo,0)
 };

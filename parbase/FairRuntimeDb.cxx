@@ -22,12 +22,12 @@
 #include "FairGenericParAsciiFileIo.h"  // for FairGenericParAsciiFileIo
 #include "FairGenericParRootFileIo.h"   // for FairGenericParRootFileIo
 //#include "FairGenericParTSQLIo.h"       // for FairGenericParTSQLIo
-#include "FairGenericParDbIo.h"
 #include "FairLogger.h"                 // for FairLogger, MESSAGE_ORIGIN
 #include "FairParAsciiFileIo.h"         // for FairParAsciiFileIo
 #include "FairParIo.h"                  // for FairParIo
 #include "FairParRootFileIo.h"          // for FairParRootFileIo
 #include "FairParDbIo.h"
+#include "FairGenericParDbIo.h"
 #include "FairParSet.h"                 // for FairParSet
 #include "FairRtdbRun.h"                // for FairRtdbRun, FairParVersion
 
@@ -834,7 +834,7 @@ void FairRuntimeDb::activateParIo(FairParIo* io)
     //}
     else if(strcmp(ioName,"FairParDbIo") == 0) {
       FairGenericParDbIo* pn = new FairGenericParDbIo(static_cast<FairParDbIo*>(io));
-     io->setDetParIo(pn);
+      io->setDetParIo(pn);
     }
   }
   TIter next(&contFactories);
